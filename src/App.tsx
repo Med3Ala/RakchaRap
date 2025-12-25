@@ -1,7 +1,6 @@
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
-import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { HomePage } from "./components/HomePage";
 import { ProfilePage } from "./components/ProfilePage";
@@ -9,30 +8,27 @@ import { SingersPage } from "./components/SingersPage";
 import { PollsPage } from "./components/PollsPage";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Navigation } from "./components/Navigation";
-import { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<"home" | "profile" | "singers" | "polls">("home");
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      <Authenticated>
-        <AuthenticatedApp currentPage={currentPage} setCurrentPage={setCurrentPage} />
-      </Authenticated>
-      <Unauthenticated>
-        <UnauthenticatedApp />
-      </Unauthenticated>
+      <BrowserRouter>
+        <Authenticated>
+          <AuthenticatedApp />
+        </Authenticated>
+        <Unauthenticated>
+          <UnauthenticatedApp />
+        </Unauthenticated>
+      </BrowserRouter>
       <Toaster theme="dark" />
     </div>
   );
 }
 
-function AuthenticatedApp({ currentPage, setCurrentPage }: { 
-  currentPage: string; 
-  setCurrentPage: (page: "home" | "profile" | "singers" | "polls") => void;
-}) {
+function AuthenticatedApp() {
   const user = useQuery(api.users.getCurrentUser);
-  
+
   if (user === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -40,23 +36,23 @@ function AuthenticatedApp({ currentPage, setCurrentPage }: {
       </div>
     );
   }
-  
+
   if (!user?.profile) {
     return <ProfileSetup />;
   }
-  
+
   return (
     <div className="min-h-screen">
-      <Navigation 
-        currentPage={currentPage} 
-        setCurrentPage={setCurrentPage}
-        user={user}
-      />
+      <Navigation user={user} />
       <main className="pt-20">
-        {currentPage === "home" && <HomePage />}
-        {currentPage === "profile" && <ProfilePage />}
-        {currentPage === "singers" && <SingersPage />}
-        {currentPage === "polls" && <PollsPage />}
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/singers" element={<SingersPage />} />
+          <Route path="/polls" element={<PollsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
   );

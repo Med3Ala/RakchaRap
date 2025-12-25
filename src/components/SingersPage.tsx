@@ -1,5 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Link } from "react-router-dom";
 import { RadarChart } from "./RadarChart";
 
 export function SingersPage() {
@@ -14,35 +15,40 @@ export function SingersPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {singers?.map((singer) => (
-          <div key={singer._id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+          <div key={singer._id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all flex flex-col">
+            <Link
+              to={`/profile/${singer.userId}`}
+              className="group flex items-center space-x-4 mb-4 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg ring-2 ring-transparent group-hover:ring-cyan-500/50 transition-all">
                 {(singer.displayName || singer.user?.name || "U").charAt(0).toUpperCase()}
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-white group-hover:text-cyan-400 transition-colors">
                   {singer.displayName || singer.user?.name}
                 </h3>
                 <p className="text-cyan-400 text-sm">Artist</p>
               </div>
-            </div>
+            </Link>
 
-            {singer.bio && (
-              <p className="text-gray-300 text-sm mb-4 line-clamp-3">{singer.bio}</p>
-            )}
+            <div className="flex-1">
+              {singer.bio && (
+                <p className="text-gray-300 text-sm mb-4 line-clamp-3 leading-relaxed">{singer.bio}</p>
+              )}
 
-            {singer.ratings && (
-              <div className="mb-4">
-                <div className="grid grid-cols-5 gap-2 text-xs">
-                  {Object.entries(singer.ratings).map(([key, value]) => (
-                    <div key={key} className="text-center">
-                      <div className="text-gray-400 capitalize">{key}</div>
-                      <div className="text-white font-medium">{(value as number).toFixed(1)}</div>
-                    </div>
-                  ))}
+              {singer.ratings && (
+                <div className="mb-6 bg-gray-900/40 p-4 rounded-xl border border-gray-700/30">
+                  <div className="grid grid-cols-5 gap-2 text-xs">
+                    {Object.entries(singer.ratings).map(([key, value]) => (
+                      <div key={key} className="text-center">
+                        <div className="text-gray-500 capitalize mb-1">{key}</div>
+                        <div className="text-white font-bold">{(value as number).toFixed(1)}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {singer.socialLinks && Object.values(singer.socialLinks).some(link => link) && (
               <div className="flex flex-wrap gap-2">
