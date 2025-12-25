@@ -1,5 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { RadarChart } from "./RadarChart";
 
 export function SingersPage() {
   const singers = useQuery(api.users.getSingers);
@@ -45,7 +46,7 @@ export function SingersPage() {
 
             {singer.socialLinks && Object.values(singer.socialLinks).some(link => link) && (
               <div className="flex flex-wrap gap-2">
-                {Object.entries(singer.socialLinks).map(([platform, url]) => 
+                {Object.entries(singer.socialLinks).map(([platform, url]) =>
                   url ? (
                     <a
                       key={platform}

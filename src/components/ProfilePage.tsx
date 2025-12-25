@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
+import { RadarChart } from "./RadarChart";
 
 export function ProfilePage() {
   const user = useQuery(api.users.getCurrentUser);
@@ -18,7 +19,7 @@ export function ProfilePage() {
   });
 
   const updateProfile = useMutation(api.users.updateProfile);
-  const userSongs = useQuery(api.songs.getSongsBySinger, 
+  const userSongs = useQuery(api.songs.getSongsBySinger,
     user?.profile?.role === "singer" && user?._id ? { singerId: user._id } : "skip"
   );
 
@@ -40,16 +41,16 @@ export function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       await updateProfile({
         displayName: formData.displayName || undefined,
         bio: formData.bio || undefined,
-        socialLinks: Object.values(formData.socialLinks).some(link => link) 
-          ? formData.socialLinks 
+        socialLinks: Object.values(formData.socialLinks).some(link => link)
+          ? formData.socialLinks
           : undefined,
       });
-      
+
       toast.success("Profile updated successfully!");
       setIsEditing(false);
     } catch (error) {
@@ -80,13 +81,12 @@ export function ProfilePage() {
                   {user.profile?.displayName || user.name || "User"}
                 </h1>
                 <div className="flex items-center space-x-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    user.profile?.role === "singer" 
-                      ? "bg-purple-500/20 text-purple-400" 
-                      : user.profile?.role === "admin"
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${user.profile?.role === "singer"
+                    ? "bg-purple-500/20 text-purple-400"
+                    : user.profile?.role === "admin"
                       ? "bg-red-500/20 text-red-400"
                       : "bg-blue-500/20 text-blue-400"
-                  }`}>
+                    }`}>
                     {user.profile?.role || "spectator"}
                   </span>
                   {user.email && (
@@ -95,7 +95,7 @@ export function ProfilePage() {
                 </div>
               </div>
             </div>
-            
+
             <button
               onClick={() => setIsEditing(!isEditing)}
               className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
@@ -191,7 +191,7 @@ export function ProfilePage() {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-3">Social Links</h3>
                   <div className="flex flex-wrap gap-3">
-                    {Object.entries(user.profile.socialLinks).map(([platform, url]) => 
+                    {Object.entries(user.profile.socialLinks).map(([platform, url]) =>
                       url ? (
                         <a
                           key={platform}
@@ -210,15 +210,31 @@ export function ProfilePage() {
 
               {/* Ratings for singers */}
               {user.profile?.role === "singer" && user.profile?.ratings && (
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">Average Ratings</h3>
-                  <div className="grid grid-cols-5 gap-4">
-                    {Object.entries(user.profile.ratings).map(([key, value]) => (
-                      <div key={key} className="text-center">
-                        <div className="text-2xl font-bold text-cyan-400">{(value as number).toFixed(1)}</div>
-                        <div className="text-sm text-gray-400 capitalize">{key}</div>
+                <div className="bg-gray-800/30 rounded-3xl p-6 border border-gray-700/50">
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                    <span className="w-2 h-8 bg-cyan-500 rounded-full mr-3"></span>
+                    Skill Spectrum
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="h-[300px]">
+                      <RadarChart ratings={user.profile.ratings as any} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(user.profile.ratings).map(([key, value]) => (
+                        <div key={key} className="bg-gray-900/40 p-4 rounded-2xl border border-gray-700/30">
+                          <div className="text-sm text-gray-400 capitalize mb-1">{key}</div>
+                          <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                            {(value as number).toFixed(1)}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 p-4 rounded-2xl border border-cyan-500/20 col-span-2">
+                        <div className="text-sm text-cyan-300 font-semibold mb-1 uppercase tracking-wider">Overall Ranking</div>
+                        <div className="text-3xl font-black text-white">
+                          {(Object.values(user.profile.ratings).reduce((a, b) => (a as number) + (b as number), 0) / 5).toFixed(1)}
+                        </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               )}
