@@ -9,6 +9,7 @@ import { PollsPage } from "./components/PollsPage";
 import { SongDetailPage } from "./components/SongDetailPage";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Navigation } from "./components/Navigation";
+import { Footer } from "./components/Footer";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 export default function App() {
@@ -43,9 +44,9 @@ function AuthenticatedApp() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navigation user={user} />
-      <main className="pt-20">
+      <main className="pt-20 flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/profile" element={<ProfilePage />} />
@@ -56,6 +57,7 @@ function AuthenticatedApp() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }
