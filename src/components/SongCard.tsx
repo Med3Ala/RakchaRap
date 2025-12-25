@@ -1,26 +1,17 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { RatingStars } from "./RatingStars";
 import { toast } from "sonner";
+import { RatingModal } from "./RatingModal";
 
 interface SongCardProps {
   song: any;
+  onRateClick: (song: any) => void;
 }
 
-export function SongCard({ song }: SongCardProps) {
-  const [showRating, setShowRating] = useState(false);
-  const [ratings, setRatings] = useState({
-    lyrics: 0,
-    beat: 0,
-    flow: 0,
-    style: 0,
-    videoclip: 0,
-  });
-  
+export function SongCard({ song, onRateClick }: SongCardProps) {
   const voteSong = useMutation(api.songs.voteSong);
-  const rateSong = useMutation(api.songs.rateSong);
-  
+
   const handleVote = async (type: "upvote" | "downvote") => {
     try {
       await voteSong({ songId: song._id, type });
@@ -29,24 +20,11 @@ export function SongCard({ song }: SongCardProps) {
       toast.error("Failed to vote");
     }
   };
-  
-  const handleRating = async () => {
-    try {
-      await rateSong({
-        songId: song._id,
-        ...ratings,
-      });
-      toast.success("Rating submitted!");
-      setShowRating(false);
-    } catch (error) {
-      toast.error("Failed to submit rating");
-    }
-  };
-  
-  const averageRating = song.ratings 
+
+  const averageRating = song.ratings
     ? (Object.values(song.ratings) as number[]).reduce((sum: number, val: number) => sum + val, 0) / 5
     : 0;
-  
+
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 transition-all group">
       {/* Thumbnail */}
@@ -62,7 +40,7 @@ export function SongCard({ song }: SongCardProps) {
             <div className="text-4xl">🎵</div>
           </div>
         )}
-        
+
         {/* Play overlay */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <button
@@ -73,7 +51,7 @@ export function SongCard({ song }: SongCardProps) {
           </button>
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="p-6">
         <div className="flex items-start justify-between mb-3">
@@ -83,7 +61,7 @@ export function SongCard({ song }: SongCardProps) {
               {song.singer?.profile?.displayName || song.singer?.name}
             </p>
           </div>
-          
+
           {averageRating > 0 && (
             <div className="flex items-center space-x-1">
               <span className="text-yellow-400">⭐</span>
@@ -91,7 +69,7 @@ export function SongCard({ song }: SongCardProps) {
             </div>
           )}
         </div>
-        
+
         {/* Ratings breakdown */}
         {song.ratings && (
           <div className="mb-4">
@@ -105,7 +83,7 @@ export function SongCard({ song }: SongCardProps) {
             </div>
           </div>
         )}
-        
+
         {/* Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -116,7 +94,7 @@ export function SongCard({ song }: SongCardProps) {
               <span>👍</span>
               <span className="text-sm">{song.upvotes}</span>
             </button>
-            
+
             <button
               onClick={() => handleVote("downvote")}
               className="flex items-center space-x-1 text-red-400 hover:text-red-300 transition-colors"
@@ -125,15 +103,15 @@ export function SongCard({ song }: SongCardProps) {
               <span className="text-sm">{song.downvotes}</span>
             </button>
           </div>
-          
+
           <button
-            onClick={() => setShowRating(true)}
+            onClick={() => onRateClick(song)}
             className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
           >
             Rate
           </button>
         </div>
-        
+
         {/* Lyrics preview */}
         {song.lyrics && (
           <div className="mt-4 p-3 bg-gray-700/50 rounded-lg">
@@ -141,44 +119,6 @@ export function SongCard({ song }: SongCardProps) {
           </div>
         )}
       </div>
-      
-      {/* Rating Modal */}
-      {showRating && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-            <h3 className="text-lg font-semibold text-white mb-4">Rate "{song.title}"</h3>
-            
-            <div className="space-y-4">
-              {Object.entries(ratings).map(([key, value]) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-300 mb-2 capitalize">
-                    {key}
-                  </label>
-                  <RatingStars
-                    rating={value}
-                    onChange={(rating) => setRatings(prev => ({ ...prev, [key]: rating }))}
-                  />
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={() => setShowRating(false)}
-                className="flex-1 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRating}
-                className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Submit Rating
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
