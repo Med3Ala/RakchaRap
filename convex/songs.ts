@@ -9,15 +9,15 @@ export const getAllSongs = query({
   },
   handler: async (ctx, args) => {
     let songs = await ctx.db.query("songs").collect();
-    
+
     // Filter by search term
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      songs = songs.filter(song => 
+      songs = songs.filter(song =>
         song.title.toLowerCase().includes(searchLower)
       );
     }
-    
+
     // Get singer info for each song
     const songsWithSingers = await Promise.all(
       songs.map(async (song) => {
@@ -26,14 +26,14 @@ export const getAllSongs = query({
           .query("userProfiles")
           .withIndex("by_user", (q) => q.eq("userId", song.singerId))
           .first();
-        
+
         return {
           ...song,
           singer: singer ? { ...singer, profile: singerProfile } : null,
         };
       })
     );
-    
+
     // Sort based on sortBy parameter
     switch (args.sortBy) {
       case "rating":
@@ -59,7 +59,7 @@ export const getAllSongs = query({
       default:
         songsWithSingers.sort((a, b) => b._creationTime - a._creationTime);
     }
-    
+
     return songsWithSingers;
   },
 });
@@ -72,7 +72,7 @@ export const getSongsBySinger = query({
       .withIndex("by_singer", (q) => q.eq("singerId", args.singerId))
       .order("desc")
       .collect();
-    
+
     return songs;
   },
 });
@@ -86,20 +86,20 @@ export const createSong = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
+
     const profile = await ctx.db
       .query("userProfiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    
+
     if (!profile || profile.role !== "singer") {
       throw new Error("Only singers can post songs");
     }
-    
+
     // Extract YouTube thumbnail
     const videoId = extractYouTubeVideoId(args.youtubeUrl);
     const thumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : undefined;
-    
+
     return await ctx.db.insert("songs", {
       singerId: userId,
       title: args.title,
@@ -121,20 +121,20 @@ export const voteSong = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
+
     const existingVote = await ctx.db
       .query("votes")
       .withIndex("by_user_song", (q) => q.eq("userId", userId).eq("songId", args.songId))
       .first();
-    
+
     const song = await ctx.db.get(args.songId);
     if (!song) throw new Error("Song not found");
-    
+
     if (existingVote) {
       // Update existing vote
       if (existingVote.type !== args.type) {
         await ctx.db.patch(existingVote._id, { type: args.type });
-        
+
         // Update song vote counts
         if (args.type === "upvote") {
           await ctx.db.patch(args.songId, {
@@ -155,7 +155,7 @@ export const voteSong = mutation({
         userId,
         type: args.type,
       });
-      
+
       // Update song vote counts
       if (args.type === "upvote") {
         await ctx.db.patch(args.songId, { upvotes: song.upvotes + 1 });
@@ -178,12 +178,12 @@ export const rateSong = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
+
     const existingRating = await ctx.db
       .query("songRatings")
       .withIndex("by_user_song", (q) => q.eq("userId", userId).eq("songId", args.songId))
       .first();
-    
+
     if (existingRating) {
       // Update existing rating
       await ctx.db.patch(existingRating._id, {
@@ -205,7 +205,7 @@ export const rateSong = mutation({
         videoclip: args.videoclip,
       });
     }
-    
+
     // Recalculate average ratings for the song
     await recalculateSongRatings(ctx, args.songId);
   },
@@ -216,9 +216,9 @@ async function recalculateSongRatings(ctx: any, songId: any) {
     .query("songRatings")
     .withIndex("by_song", (q: any) => q.eq("songId", songId))
     .collect();
-  
+
   if (ratings.length === 0) return;
-  
+
   const averages = {
     lyrics: ratings.reduce((sum: number, r: any) => sum + r.lyrics, 0) / ratings.length,
     beat: ratings.reduce((sum: number, r: any) => sum + r.beat, 0) / ratings.length,
@@ -226,11 +226,47 @@ async function recalculateSongRatings(ctx: any, songId: any) {
     style: ratings.reduce((sum: number, r: any) => sum + r.style, 0) / ratings.length,
     videoclip: ratings.reduce((sum: number, r: any) => sum + r.videoclip, 0) / ratings.length,
   };
-  
+
   await ctx.db.patch(songId, {
     ratings: averages,
     ratingCount: ratings.length,
   });
+
+  // After updating the song, update the singer's overall profile ratings
+  const song = await ctx.db.get(songId);
+  if (song) {
+    await recalculateSingerRatings(ctx, song.singerId);
+  }
+}
+
+async function recalculateSingerRatings(ctx: any, singerId: any) {
+  const songs = await ctx.db
+    .query("songs")
+    .withIndex("by_singer", (q: any) => q.eq("singerId", singerId))
+    .collect();
+
+  const ratedSongs = songs.filter((s: any) => s.ratings);
+
+  if (ratedSongs.length === 0) return;
+
+  const totalAverages = {
+    lyrics: ratedSongs.reduce((sum: number, s: any) => sum + s.ratings.lyrics, 0) / ratedSongs.length,
+    beat: ratedSongs.reduce((sum: number, s: any) => sum + s.ratings.beat, 0) / ratedSongs.length,
+    flow: ratedSongs.reduce((sum: number, s: any) => sum + s.ratings.flow, 0) / ratedSongs.length,
+    style: ratedSongs.reduce((sum: number, s: any) => sum + s.ratings.style, 0) / ratedSongs.length,
+    videoclip: ratedSongs.reduce((sum: number, s: any) => sum + s.ratings.videoclip, 0) / ratedSongs.length,
+  };
+
+  const profile = await ctx.db
+    .query("userProfiles")
+    .withIndex("by_user", (q: any) => q.eq("userId", singerId))
+    .first();
+
+  if (profile) {
+    await ctx.db.patch(profile._id, {
+      ratings: totalAverages,
+    });
+  }
 }
 
 function extractYouTubeVideoId(url: string): string | null {
