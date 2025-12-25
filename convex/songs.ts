@@ -166,6 +166,19 @@ export const voteSong = mutation({
   },
 });
 
+export const getUserRating = query({
+  args: { songId: v.id("songs") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    return await ctx.db
+      .query("songRatings")
+      .withIndex("by_user_song", (q) => q.eq("userId", userId).eq("songId", args.songId))
+      .first();
+  },
+});
+
 export const rateSong = mutation({
   args: {
     songId: v.id("songs"),

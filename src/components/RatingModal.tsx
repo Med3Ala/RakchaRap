@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { RatingStars } from "./RatingStars";
 
 interface RatingModalProps {
@@ -9,6 +11,7 @@ interface RatingModalProps {
 }
 
 export function RatingModal({ song, onClose, onSubmit }: RatingModalProps) {
+    const previousRating = useQuery(api.songs.getUserRating, { songId: song._id });
     const [ratings, setRatings] = useState({
         lyrics: 0,
         beat: 0,
@@ -18,6 +21,28 @@ export function RatingModal({ song, onClose, onSubmit }: RatingModalProps) {
     });
     const [hoverValues, setHoverValues] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (previousRating) {
+            setRatings({
+                lyrics: previousRating.lyrics,
+                beat: previousRating.beat,
+                flow: previousRating.flow,
+                style: previousRating.style,
+                videoclip: previousRating.videoclip,
+            });
+        }
+    }, [previousRating]);
+
+    if (previousRating === undefined) {
+        return createPortal(
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-gray-950/90 backdrop-blur-xl" />
+                <div className="relative animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+            </div>,
+            document.body
+        );
+    }
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
