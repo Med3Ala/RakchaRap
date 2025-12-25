@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
-import { RatingModal } from "./RatingModal";
+import { Link } from "react-router-dom";
 
 interface SongCardProps {
   song: any;
@@ -28,12 +27,12 @@ export function SongCard({ song, onRateClick }: SongCardProps) {
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 transition-all group">
       {/* Thumbnail */}
-      <div className="relative aspect-video bg-gray-700">
+      <Link to={`/song/${song._id}`} className="block relative aspect-video bg-gray-700 overflow-hidden">
         {song.thumbnail ? (
           <img
             src={song.thumbnail}
             alt={song.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -43,23 +42,24 @@ export function SongCard({ song, onRateClick }: SongCardProps) {
 
         {/* Play overlay */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <button
-            onClick={() => window.open(song.youtubeUrl, '_blank')}
-            className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white text-2xl hover:bg-red-700 transition-colors"
-          >
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white text-2xl shadow-xl">
             ▶️
-          </button>
+          </div>
         </div>
-      </div>
+      </Link>
 
       {/* Content */}
       <div className="p-6">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-white truncate">{song.title}</h3>
-            <p className="text-cyan-400 text-sm">
-              {song.singer?.profile?.displayName || song.singer?.name}
-            </p>
+            <Link to={`/song/${song._id}`}>
+              <h3 className="text-lg font-semibold text-white truncate hover:text-cyan-400 transition-colors uppercase tracking-tight">{song.title}</h3>
+            </Link>
+            <Link to={`/profile/${song.singerId}`}>
+              <p className="text-cyan-400 text-sm font-medium hover:underline">
+                {song.singer?.profile?.displayName || song.singer?.name}
+              </p>
+            </Link>
           </div>
 
           {averageRating > 0 && (

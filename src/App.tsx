@@ -6,6 +6,7 @@ import { HomePage } from "./components/HomePage";
 import { ProfilePage } from "./components/ProfilePage";
 import { SingersPage } from "./components/SingersPage";
 import { PollsPage } from "./components/PollsPage";
+import { SongDetailPage } from "./components/SongDetailPage";
 import { ProfileSetup } from "./components/ProfileSetup";
 import { Navigation } from "./components/Navigation";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -49,6 +50,7 @@ function AuthenticatedApp() {
           <Route path="/" element={<HomePage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/song/:songId" element={<SongDetailPage />} />
           <Route path="/singers" element={<SingersPage />} />
           <Route path="/polls" element={<PollsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -64,6 +64,25 @@ export const getAllSongs = query({
   },
 });
 
+export const getSongById = query({
+  args: { songId: v.id("songs") },
+  handler: async (ctx, args) => {
+    const song = await ctx.db.get(args.songId);
+    if (!song) return null;
+
+    const singer = await ctx.db.get(song.singerId);
+    const singerProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user", (q) => q.eq("userId", song.singerId))
+      .first();
+
+    return {
+      ...song,
+      singer: singer ? { ...singer, profile: singerProfile } : null,
+    };
+  },
+});
+
 export const getSongsBySinger = query({
   args: { singerId: v.id("users") },
   handler: async (ctx, args) => {
